@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <pthread.h>
 
 /* funcao que calcula o minimo valor em um vetor */
 double min_val(double * vet,int nval) {
@@ -12,11 +13,10 @@ double min_val(double * vet,int nval) {
 
   min = FLT_MAX;
 
-  for(i=0;i<nval;i++) {
+  for(i = 0; i < nval; i++) {
     if(vet[i] < min)
       min =  vet[i];
   }
-	
   return min;
 }
 
@@ -27,59 +27,65 @@ double max_val(double * vet, int nval) {
 
   max = FLT_MIN;
 
-  for(i=0;i<nval;i++) {
+  for(i = 0; i < nval; i++) {
     if(vet[i] > max)
       max =  vet[i];
-  }
-	
+  }	
   return max;
 }
 
 /* conta quantos valores no vetor estao entre o minimo e o maximo passados como parametros */
-int * count(double min, double max, int * vet, int nbins, double h, double * val, int nval) {
+int * count2(double min, double max, int * vet, int nbins, double h, double * val, int nval) {
   int i, j, count;
   double min_t, max_t;
 
-  for(j=0;j<nbins;j++) {
+  for(j = 0; j < nbins; j++) {
     count = 0;
-    min_t = min + j*h;
-    max_t = min + (j+1)*h;
+    min_t = min + j * h;
+    max_t = min + (j + 1) * h;
     for(i=0;i<nval;i++) {
       if(val[i] <= max_t && val[i] > min_t) {
 	count++;
       }
     }
-
-    vet[j] = count;
+    __sync_fetch_and_add(&(vet[j]), count);
   }
-
   return vet;
 }
 
+typedef struct {
+  double min; double max; int * vet; int nbins; double h; double * val; int nval;
+}Args;
+  
+
+void *test(void *args)
+{
+  Args *argsS = (Args *) args;
+  count2(argsS->min, argsS->max, argsS->vet, argsS->nbins, argsS->h, argsS-> val, argsS->nval);
+  return NULL;
+}
+
 /* conta quantos valores no vetor estao entre o minimo e o maximo passados como parametros */
-int * countP(double min, double max, int * vet, int nbins, double h, double * val, int nval) {
-  int i, j, count;
-  double min_t, max_t;
-
-  for(j = 0;j < nbins; j++) {
-    count = 0;
-    min_t = min + j * h;
-    max_t = min + (j + 1) * h;
-    for(i = 0; i < nval; i++) {
-      if(val[i] <= max_t && val[i] > min_t) {
-	count++;
-      }
+int * countP(double min, double max, int * vet, int nbins, double h, double * val, int nval, int nt) {
+  pthread_t threads[nt];
+  Args args[nt];
+  int i;
+  for(i = 0; i < nt; i++){
+    args[i] = (Args){min, max, vet, nbins, h, &(val[nval * i / nt]), nval/nt};
+    
+    if(pthread_create(&(threads[i]), NULL, test, (void *)&(args[i]))){
+      printf("Error creating thread \n");
+      exit(1);
     }
-
-    vet[j] = count;
   }
-
+  for(i = 0; i < nt; i++)
+    pthread_join(threads[i], NULL);
   return vet;
 }
 
 int main(int argc, char * argv[]) {
   double h, *val, max, min;
-  int n, nval, i, *vet, *vetP, size;
+  int n, nval, i, *vet, size;
   long unsigned int duracao;
   struct timeval start, end;
 
@@ -93,8 +99,7 @@ int main(int argc, char * argv[]) {
   /* vetor com os dados */
   val = (double *)malloc(nval*sizeof(double));
   vet = (int *)malloc(n*sizeof(int));
-  vetP = (int *)malloc(n*sizeof(int));
-
+  
   /* entrada dos dados */
   for(i=0;i<nval;i++) {
     scanf("%lf",&val[i]);
@@ -107,34 +112,29 @@ int main(int argc, char * argv[]) {
   /* calcula o tamanho de cada barra */
   h = (max - min)/n;
 
-
   /* chama a funcao */
   gettimeofday(&start, NULL);
-  vet = count(min, max, vet, n, h, val, nval);
+  vet = countP(min, max, vet, n, h, val, nval, size);
   gettimeofday(&end, NULL);
   duracao = ((end.tv_sec * 1000000 + end.tv_usec) -	\
 	     (start.tv_sec * 1000000 + start.tv_usec));
-  printf("Serial: %lu\n", duracao);
+
+  printf("%.2lf", min);
+  for(i = 1; i <= n; i++)
+    printf(" %.2lf", min + h * i);
+  printf("\n");
+
+  printf("%d", vet[0]);
+  for(i = 1; i < n; i++)
+    printf(" %d", vet[i]);
+  printf("\n");
   
-  gettimeofday(&start, NULL);
-  vetP = countP(min, max, vetP, n, h, val, nval);
-  gettimeofday(&end, NULL);
-  duracao = ((end.tv_sec * 1000000 + end.tv_usec) -	\
-	     (start.tv_sec * 1000000 + start.tv_usec));
-  printf("Parallel: %lu\n", duracao);
+  for(i = 1; i < n; i++)
+    printf(" %d", vet[i]);
+  printf("\n");
+  
+  printf("%lu\n", duracao);
 
-  int correct = 0;
-  for(i=1;i<=n;i++) {
-    if(vet[i] != vetP[i]){
-      correct = 1;
-      break;
-    }
-  }
-  if(correct == 1)
-    printf("False\n");
-  printf("True\n");
-
-  free(vetP);
   free(vet);
   free(val);
 
