@@ -1,3 +1,51 @@
+/*
+
+1    2   4   8   16
+  E 0.8 0.5 0.2 0.03
+  S 1.6 2.0 1.3 0.5
+2 
+  E 1.0 0.6 0.3 0.2
+  S 1.9 2.3 2.5 3.3
+3
+  E 1.0 0.6 0.3 0.2
+  S 1.9 2.3 2.7 3.4
+
+Para o arquivo 1, a queda no speedup pode ser atribuída ao tamanho reduzido do vetor (apenas 1000).
+Nos arquivos 2 e 3, houve aumento no speedup, confome esperado; entretanto, a queda na eficiência pode ser atribuída a limitação da máquina utilizada para os testes.
+
+Para profiling foi utilizado gprof no arq3.in fornecido. O resultado foi confome segue:
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ms/call  ms/call  name    
+100.29      0.47     0.47        2   235.68   235.68  count2
+  0.00      0.47     0.00        1     0.00     0.00  countP
+  0.00      0.47     0.00        1     0.00     0.00  max_val
+  0.00      0.47     0.00        1     0.00     0.00  min_val
+
+% time This is the percentage of the `total' time that was spent
+in this function and its children. Note that due to
+different viewpoints, functions excluded by options, etc,
+these numbers will NOT add up to 100%.
+
+O código é altamente paralelizável, visto que em torno de 100% do tempo de execução se deve a count2 (parte paralelizada do código).
+
+Utilizando perf também no arquivo 3:
+
+Performance counter stats for './T3':
+        484.295120      task-clock (msec)         #    1.829 CPUs utilized          
+                12      context-switches          #    0.025 K/sec                  
+                 3      cpu-migrations            #    0.006 K/sec                  
+               367      page-faults               #    0.758 K/sec                  
+     1,614,199,971      cycles                    #    3.333 GHz                    
+   <not supported>      stalled-cycles-frontend  
+   <not supported>      stalled-cycles-backend   
+                 0      instructions              #    0.00  insns per cycle        
+       234,987,904      branches                  #  485.216 M/sec                  
+        20,375,006      branch-misses             #    8.67% of all branches        
+
+       0.264801259 seconds time elapsed
+
+ */
 #include <stdio.h>
 #include <float.h>
 #include <math.h>
