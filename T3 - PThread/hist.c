@@ -29,7 +29,7 @@ these numbers will NOT add up to 100%.
 
 O código é altamente paralelizável, visto que em torno de 100% do tempo de execução se deve a count2 (parte paralelizada do código).
 
-Utilizando perf também no arquivo 3:
+Utilizando perf também com a execução do arquivo 3:
 
 Performance counter stats for './T3':
         484.295120      task-clock (msec)         #    1.829 CPUs utilized          
@@ -118,6 +118,7 @@ int * countP(double min, double max, int * vet, int nbins, double h, double * va
   pthread_t threads[nt];
   Args args[nt];
   int i;
+  
   for(i = 0; i < nt; i++){
     args[i] = (Args){min, max, vet, nbins, h, &(val[nval * i / nt]), nval/nt};
     
