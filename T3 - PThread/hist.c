@@ -181,10 +181,6 @@ int main(int argc, char * argv[]) {
     printf(" %d", vet[i]);
   printf("\n");
   
-  for(i = 1; i < n; i++)
-    printf(" %d", vet[i]);
-  printf("\n");
-  
   printf("%lu\n", duracao);
 
   free(vet);
