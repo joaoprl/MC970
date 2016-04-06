@@ -148,6 +148,9 @@ int main(int argc, char * argv[]) {
   /* vetor com os dados */
   val = (double *)malloc(nval*sizeof(double));
   vet = (int *)malloc(n*sizeof(int));
+
+  for(i = 0; i < n; i++)
+    vet[i] = 0;
   
   /* entrada dos dados */
   for(i=0;i<nval;i++) {
