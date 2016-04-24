@@ -1,3 +1,10 @@
+/* Nome: Joao Pedro Ramos Lopes RA: 139546
+ * Considerando obter maior eficiencia, optou-se por nao utilizar uma thread de controle.
+ * Cada thread sabe, a partir da propria ID, quais numeros devem ser executados
+ * Como ha apenas uma senha, a variavel de controle, found, sera alterada por apenas uma thread, nao apresentando disputa sobre a variavel
+ * O overhead tambem eh pequeno, visto que apos uma thread achar a senha, as outras continuarao executando ate ter a variavel de controle atualizada pelo sistema. Esse overhead de finalizacao poderia ser diminuido utilizando o tipo volatile, mas obteria-se um overhead maior ao longo da execucao
+ */
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
